@@ -6,20 +6,29 @@
 
 ```
 duo-matching/
-├── docker-compose.yml   # PostgreSQL
 ├── backend/             # Spring Boot 3 (Java 17, Gradle)
-└── frontend/            # Vite + React (JavaScript)
+├── frontend/            # Vite + React (JavaScript)
+└── infra/               # PostgreSQL Docker Compose
 ```
 
 ## 실행 방법
 
+### 0. 환경변수 준비
+```bash
+cp infra/.env.example infra/.env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
+
 ### 1. DB 실행
 ```bash
+cd infra
 docker compose up -d
 ```
 
 ### 2. 백엔드 실행 (Java 17 필요)
 ```bash
+cd ..
 cd backend
 # IntelliJ에서 DuoApplication 실행, 또는:
 gradle bootRun
@@ -76,5 +85,5 @@ npm run dev
 
 - **온라인 표시**: 요청마다 `lastActiveAt` 갱신, 5분 이내 활동 시 온라인으로 표시
 - **신청 1시간 만료**: 배치 없이 조회 시점에 `createdAt` 기준으로 필터링
-- **로컬 환경변수**: `.env.example`을 참고해 `.env`를 만들고, DB 비밀번호와 JWT 시크릿은 Git에 커밋하지 않음
+- **로컬 환경변수**: `infra/.env.example`, `backend/.env.example`, `frontend/.env.example`을 참고해 각각 `.env`를 만들고, 실제 값은 Git에 커밋하지 않음
 - **알림**: 10초 폴링. 이후 SSE/WebSocket user queue로 교체 가능
