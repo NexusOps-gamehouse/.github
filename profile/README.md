@@ -1,89 +1,355 @@
-# DUO.GG — 게임 친구(듀오) 매칭 플랫폼 MVP
+# 🎮 GameHouse
 
-와이어프레임 ①~⑧ 전체 구현. React(JS) + Spring Boot 3 + PostgreSQL + WebSocket(STOMP).
+> **게임 파트너 매칭 플랫폼**
+>
+> React + Spring Boot + PostgreSQL + RabbitMQ(STOMP) 기반의 게임 친구(듀오) 매칭 서비스입니다.
+>
+> Docker 기반 컨테이너 환경에서 실행되며, GitHub Actions를 이용한 CI와 AWS 기반 CD를 구축하는 것을 목표로 합니다.
 
-## 구조
+---
 
+# 📂 프로젝트 구조
+
+```text
+gamehouse/
+├── frontend/        # React + Vite
+├── backend/         # Spring Boot 3 (Java 17)
+└── infra/           # Docker Compose / CI-CD / Monitoring
 ```
-duo-matching/
-├── backend/             # Spring Boot 3 (Java 17, Gradle)
-├── frontend/            # Vite + React (JavaScript)
-└── infra/               # PostgreSQL Docker Compose
-```
 
-## 실행 방법
+---
 
-### 0. 환경변수 준비
+# 🚀 실행 방법
+
+## 1. 환경변수 준비
+
 ```bash
 cp infra/.env.example infra/.env
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
 ```
 
-### 1. DB 실행
+`.env` 파일에 필요한 값을 입력합니다.
+
+- DB_PASSWORD
+- JWT_SECRET
+- RIOT_API_KEY
+- RABBITMQ_PASSWORD
+- FRONTEND_API_BASE_URL
+- FRONTEND_WS_URL
+- FRONTEND_BACKEND_ORIGIN
+
+---
+
+## 2. Docker Compose 실행
+
 ```bash
 cd infra
+
 docker compose up -d
 ```
 
-### 2. 백엔드 실행 (Java 17 필요)
+실행되는 서비스
+
+- PostgreSQL
+- RabbitMQ
+- Backend
+- Frontend
+
+---
+
+## 3. 실행 확인
+
 ```bash
-cd ..
-cd backend
-# IntelliJ에서 DuoApplication 실행, 또는:
-gradle bootRun
+docker compose ps
 ```
-- 최초 실행 시 JPA(ddl-auto: update)가 테이블을 자동 생성합니다.
-- 처음 gradle 프로젝트를 열면 `gradle wrapper` 로 래퍼를 만들어두는 것을 권장합니다.
 
-### 3. 프론트엔드 실행 (Node 18+)
-```bash
-cd frontend
-npm install
-npm run dev
+정상 실행 시
+
+```text
+gamehouse-db
+gamehouse-rabbitmq
+gamehouse-backend
+gamehouse-frontend
 ```
-→ http://localhost:5173 (API/WebSocket은 vite proxy로 8080에 연결)
 
-## 구현된 기능
+모든 컨테이너가 **healthy** 상태가 됩니다.
 
-| 와이어프레임 | 기능 |
-|---|---|
-| ① 회원가입 | 이메일/비밀번호/닉네임 + 프로필 이미지 업로드 |
-| ② 설문 | 성별, 나이대, 게임, 성향, 포지션, 마이크, 티어(선택) |
-| ③ 프로필 확인 | 미리보기 → 수정 or 확인(계정 생성 + 자동 로그인) |
-| ④ 메인 | 모집글 목록, 카드 토글 상세, 온라인 표시(초록 점), 참가 신청 |
-| ⑤ 모집글 작성 | 제목 + 내용 (수정 모드 재사용, 기존 내용 유지) |
-| ⑥ 신청 관리 | 신청자 프로필 조회, 승인(→채팅방 자동 생성)/거절, 글 수정/삭제 |
-| ⑦ 채팅방 | STOMP WebSocket 실시간 채팅 |
-| ⑧ 마이페이지 | 내 프로필(+수정), 내 모집글, 내 신청 현황(1시간 후 대기 신청 만료) |
-| GNB | 🔔 알림(10초 폴링 + 토스트), 클릭 시 해당 글로 이동 |
+---
 
-## 주요 API
+# ✨ 구현된 기능
 
-| Method | Path | 설명 |
-|---|---|---|
-| POST | /api/auth/signup | 회원가입 (multipart, 이미지 포함) |
-| POST | /api/auth/login | 로그인 → JWT |
-| GET | /api/auth/check-email, /api/auth/check-nickname | 중복 확인 |
-| GET/PUT | /api/users/me | 내 프로필 조회/수정 |
-| GET | /api/users/{id} | 타 유저 프로필 조회 |
-| GET/POST | /api/posts | 목록(검색 `searchType`/`keyword`, 필터 `game`/`gameMode`/`status`)/작성 |
-| GET/PUT/DELETE | /api/posts/{id} | 상세/수정/삭제 |
-| POST | /api/posts/{id}/close | 모집 완료 처리 (방장) |
-| POST | /api/posts/{id}/apply | 참가 신청 |
-| GET | /api/posts/{id}/applications | 신청자 목록 (방장) |
-| POST | /api/applications/{id}/approve | 승인 → 파티 채팅방 멤버 추가, `{chatRoomId}` 반환 |
-| POST | /api/applications/{id}/confirm | 파티원 확정 (방장) |
-| POST | /api/applications/{id}/reject | 거절 |
-| DELETE | /api/chat/rooms/{roomId}/members/{userId} | 강퇴 (방장, 신청 거절 처리 포함) |
-| GET | /api/my/posts, /api/my/applications | 마이페이지 데이터 |
-| GET | /api/notifications | 알림 목록 + 미읽음 수 |
-| WS | /ws → /app/rooms/{id} 발행, /topic/rooms/{id} 구독 | 그룹 채팅 |
+| 기능 | 설명 |
+|------|------|
+| 회원가입 | 이메일, 닉네임 중복 확인, 프로필 생성 |
+| 로그인 | JWT 기반 인증 |
+| 프로필 | 조회 및 수정 |
+| 모집글 | 생성 / 조회 / 수정 / 삭제 |
+| 신청 | 참가 신청 / 승인 / 거절 |
+| 채팅 | WebSocket(STOMP) 실시간 채팅 |
+| 마이페이지 | 내 프로필, 내 모집글, 신청 현황 |
 
+---
 
-## 구현 노트
+# 📌 주요 API
 
-- **온라인 표시**: 요청마다 `lastActiveAt` 갱신, 5분 이내 활동 시 온라인으로 표시
-- **신청 1시간 만료**: 배치 없이 조회 시점에 `createdAt` 기준으로 필터링
-- **로컬 환경변수**: `infra/.env.example`, `backend/.env.example`, `frontend/.env.example`을 참고해 각각 `.env`를 만들고, 실제 값은 Git에 커밋하지 않음
-- **알림**: 10초 폴링. 이후 SSE/WebSocket user queue로 교체 가능
+| Method | URL | 설명 |
+|---------|-----|------|
+| POST | `/api/auth/signup` | 회원가입 |
+| POST | `/api/auth/login` | 로그인 |
+| GET | `/api/auth/check-email` | 이메일 중복 확인 |
+| GET | `/api/auth/check-nickname` | 닉네임 중복 확인 |
+| GET | `/api/users/me` | 내 정보 조회 |
+| PUT | `/api/users/me` | 프로필 수정 |
+| GET | `/api/posts` | 모집글 목록 |
+| POST | `/api/posts` | 모집글 작성 |
+| GET | `/api/posts/{id}` | 모집글 상세 |
+| PUT | `/api/posts/{id}` | 모집글 수정 |
+| DELETE | `/api/posts/{id}` | 모집글 삭제 |
+| POST | `/api/posts/{id}/apply` | 참가 신청 |
+| GET | `/api/posts/{id}/applications` | 신청 목록 |
+| POST | `/api/applications/{id}/approve` | 신청 승인 |
+| POST | `/api/applications/{id}/reject` | 신청 거절 |
+| GET | `/api/my/posts` | 내 모집글 |
+| GET | `/api/my/applications` | 내 신청 현황 |
+| WS | `/ws` | WebSocket 연결 |
+
+---
+
+# 🐳 Docker 구성
+
+| 서비스 | 설명 |
+|---------|------|
+| frontend | React + Vite + serve |
+| backend | Spring Boot 3 |
+| db | PostgreSQL 16 |
+| rabbitmq | RabbitMQ(STOMP) |
+
+## Backend
+
+- Multi-stage Build
+- Gradle Build
+- bootJar 생성
+- jlink Custom JRE
+- Non-root User 실행
+
+## Frontend
+
+- Multi-stage Build
+- Vite Build
+- serve 기반 실행
+- 런타임 config.js 생성
+
+---
+
+# 🔄 CI
+
+Feature 브랜치에서 Pull Request 생성 시
+
+```text
+Feature
+
+↓
+
+Secret Scan
+
+↓
+
+Docker Build
+
+↓
+
+Smoke Test
+
+↓
+
+Review
+
+↓
+
+Merge
+```
+
+## Verify
+
+- gitleaks Secret Scan
+
+## Image Check
+
+- Backend Docker Build
+- Frontend Docker Build
+- 컨테이너 실행 확인
+
+---
+
+## Publish
+
+develop 브랜치 Merge 시
+
+```text
+develop
+
+↓
+
+Docker Build
+
+↓
+
+Docker Hub Push
+```
+
+생성되는 이미지
+
+```text
+backend-develop
+backend-<commitSHA>
+
+frontend-develop
+frontend-<commitSHA>
+```
+
+---
+
+# 🚀 CD (구현 중)
+
+```text
+GitHub Actions
+
+↓
+
+Docker Hub
+
+↓
+
+AWS OIDC
+
+↓
+
+AWS Systems Manager
+
+↓
+
+EC2
+
+↓
+
+docker compose pull
+
+↓
+
+docker compose up -d
+
+↓
+
+Health Check
+```
+
+### 주요 설계
+
+- GitHub OIDC를 이용한 Keyless 인증
+- AWS Systems Manager 기반 무중단 배포
+- Docker Hub 이미지 기반 배포
+- Health Check를 통한 배포 검증
+
+---
+
+# 📊 Monitoring
+
+Prometheus + Grafana 기반 모니터링
+
+구성
+
+```text
+Prometheus
+
+↓
+
+Grafana
+
+↓
+
+cAdvisor
+
+↓
+
+node-exporter
+```
+
+모니터링 대상
+
+- Spring Boot Actuator
+- Docker Container
+- EC2 Host
+- RabbitMQ
+
+---
+
+# 🛠️ 기술 스택
+
+### Frontend
+
+- React
+- Vite
+- React Router
+- Axios
+- SockJS
+- STOMP
+
+### Backend
+
+- Spring Boot
+- Spring Security
+- JWT
+- Spring Data JPA
+- PostgreSQL
+- RabbitMQ
+- WebSocket(STOMP)
+
+### DevOps
+
+- Docker
+- Docker Compose
+- GitHub Actions
+- Docker Hub
+- AWS EC2
+- AWS Systems Manager
+- AWS OIDC
+
+### Monitoring
+
+- Prometheus
+- Grafana
+- cAdvisor
+- node-exporter
+
+---
+
+# 📦 Repository
+
+```text
+frontend/
+    React + Vite
+
+backend/
+    Spring Boot
+
+infra/
+    Docker Compose
+    CI/CD
+    Monitoring
+```
+
+---
+
+# 👥 Team
+
+| 이름 | 역할 |
+|------|------|
+| - 박윤희, 남서현, 조현우 | Frontend |
+| - 이태환, 이석현, 오수아 | Backend |
+| - 전 팀원 | DevOps |
+| - 이태환 | PM |
+
+---
+
+## 📄 License
+
+This project was developed as a team project for educational purposes.
