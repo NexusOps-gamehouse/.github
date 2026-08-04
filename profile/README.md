@@ -140,90 +140,35 @@ gamehouse-frontend
 
 ---
 
-# 🔄 CI
+# 🔄 CI/CD Pipeline
 
-Feature 브랜치에서 Pull Request 생성 시
-
-```text
-Feature
-
-↓
-
-Secret Scan
-
-↓
-
-Docker Build
-
-↓
-
-Smoke Test
-
-↓
-
-Review
-
-↓
-
-Merge
-```
-
-## Verify
-
-- gitleaks Secret Scan
-
-## Image Check
-
-- Backend Docker Build
-- Frontend Docker Build
-- 컨테이너 실행 확인
-
----
-
-## Publish
-
-develop 브랜치 Merge 시
+GitHub Actions 기반으로 코드 변경부터 배포까지 자동화했습니다.
 
 ```text
-develop
+Developer
 
 ↓
 
-Docker Build
+Pull Request
 
 ↓
 
-Docker Hub Push
-```
-
-생성되는 이미지
-
-```text
-backend-develop
-backend-<commitSHA>
-
-frontend-develop
-frontend-<commitSHA>
-```
-
----
-
-# 🚀 CD (구현 중)
-
-```text
-GitHub Actions
+CI
+- Secret Scan
+- Docker Build
+- Test
 
 ↓
 
-Docker Hub
+develop Merge
 
 ↓
 
-AWS OIDC
-
-↓
-
-AWS Systems Manager
+CD
+- Docker Image Build
+- Docker Hub Push
+- AWS OIDC 인증
+- AWS SSM 실행
 
 ↓
 
@@ -240,7 +185,6 @@ docker compose up -d
 ↓
 
 Health Check
-```
 
 ### 주요 설계
 
@@ -284,42 +228,37 @@ node-exporter
 
 # 🛠️ 기술 스택
 
-### Frontend
+## Frontend
 
 - React
 - Vite
-- React Router
 - Axios
-- SockJS
-- STOMP
+- STOMP / SockJS (실시간 채팅)
 
-### Backend
+## Backend
 
-- Spring Boot
-- Spring Security
-- JWT
+- Spring Boot 3
+- Spring Security + JWT
 - Spring Data JPA
 - PostgreSQL
-- RabbitMQ
-- WebSocket(STOMP)
+- RabbitMQ (STOMP Broker)
 
-### DevOps
+## DevOps
 
 - Docker
 - Docker Compose
-- GitHub Actions
+- GitHub Actions (CI/CD)
 - Docker Hub
 - AWS EC2
-- AWS Systems Manager
+- AWS Systems Manager (SSM)
 - AWS OIDC
 
-### Monitoring
+## Monitoring
 
 - Prometheus
 - Grafana
 - cAdvisor
 - node-exporter
-
 ---
 
 # 📦 Repository
