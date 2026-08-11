@@ -301,6 +301,70 @@ flowchart LR
 
 </details>
 
+## 🚨 알람 및 장애 대응 고도화
+
+현재 Prometheus와 Grafana를 통해 Metric을 수집하고 Dashboard에서 상태를 확인할 수 있습니다.
+
+하지만 Dashboard는 사람이 직접 열어야만 이상 징후를 확인할 수 있습니다.
+
+장애를 사전에 감지하고 원인을 빠르게 분석할 수 있도록 CloudWatch, Grafana Alerting, Loki를 활용한 알람 및 로그 체계를 추가할 계획입니다.
+
+### ☁️ RDS Storage 알람
+
+RDS Storage가 모두 사용되면 Database가 읽기 전용 상태로 전환될 수 있습니다.
+
+이 경우 회원가입, 모집글 작성, 채팅 저장과 같은 쓰기 작업이 실패할 수 있습니다.
+
+RDS 내부 Storage는 Exporter가 아닌 AWS CloudWatch의 `FreeStorageSpace` Metric으로 감시합니다.
+
+| 단계 | Metric | 임계값 | 평가 조건 | 알림 방식 |
+| --- | --- | --- | --- | --- |
+| 경고 | `FreeStorageSpace` | 4GB 이하 | 15분 동안 3회 충족 | SNS → Email |
+| 위험 | `FreeStorageSpace` | 2GB 이하 | 15분 동안 3회 충족 | SNS → Email |
+
+### 🔔 Grafana Alerting
+
+별도의 Alertmanager Container를 추가하지 않고 기존 Grafana의 Alerting 기능을 활용합니다.
+
+Metric 조회와 Dashboard, 알림 Channel을 Grafana에서 함께 관리합니다.
+
+| Alert Rule | 조건 | 목적 |
+| --- | --- | --- |
+| 수집 중단 | `up == 0` 상태가 5분간 지속 | Monitoring 대상 또는 수집기 장애 감지 |
+| Host Disk | Disk 사용률 85% 초과 | Docker Image와 Log 누적으로 인한 Disk 고갈 방지 |
+| 채팅 Queue 적체 | 대기 Message가 10분간 계속 증가 | 사용자에게 오류가 표시되지 않는 채팅 지연 감지 |
+| Riot API 한도 | `429` 응답 발생 | Rate Limit 초과로 인한 계정 연동 장애 감지 |
+
+### 📜 Loki 중앙 Log 수집
+
+Metric은 장애 발생 시점과 영향을 알려주지만 구체적인 원인은 Application Log에서 확인해야 합니다.
+
+현재는 EC2에 접속해 `docker logs`를 직접 확인해야 하므로 장애 분석 과정이 수동으로 끊겨 있습니다.
+
+Loki를 추가해 Container Log를 중앙에서 수집하고 Grafana에서 Metric과 Log를 함께 조회할 계획입니다.
+
+```text
+Grafana Alert 발생
+        ↓
+장애 Metric과 발생 시각 확인
+        ↓
+같은 시각의 Loki Log 조회
+        ↓
+오류 원인 분석 및 대응
+```
+
+### 기대 효과
+
+- RDS Storage 부족을 Service 장애 전에 감지
+
+- Monitoring 대상과 수집기의 중단 상태 자동 감지
+
+- 채팅 Queue 적체와 Riot API Rate Limit 즉시 확인
+
+- Metric과 Log를 연결한 원인 분석
+
+- Dashboard를 계속 확인하지 않아도 되는 운영 알림 자동화
+
 ---
 
 # 🔧 주요 문제 해결
